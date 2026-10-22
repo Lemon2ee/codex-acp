@@ -22,7 +22,8 @@
     },
     "auth": {
       "_meta": {
-        "authStatus": {}
+        "authStatus": {},
+        "rateLimits": {}
       }
     },
     "providers": {}

@@ -31,7 +31,8 @@
       "sse": false
     },
     "_meta": {
-      "authStatus": {}
+      "authStatus": {},
+      "rateLimits": {}
     }
   },
   "authMethods": [

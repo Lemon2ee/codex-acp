@@ -136,7 +136,7 @@ const MCP_COMMAND = {
 /**
  * The feature changes of the compatibility rule that change the messages of the scenarios:
  * the `/mcp` command has a new description and an input hint.
- * Initialize also advertises text-only append system prompts.
+ * Initialize also advertises text-only append system prompts, and the `rateLimits` marker next to `authStatus`.
  * Only a command that equals the baseline `/mcp` command changes.
  */
 export function withFeatureChanges(messages: RecordedMessage[]): RecordedMessage[] {
@@ -146,9 +146,11 @@ export function withFeatureChanges(messages: RecordedMessage[]): RecordedMessage
             const params = message.params as Json;
             const capabilities = params["agentCapabilities"] as Json | undefined;
             const session = capabilities?.["sessionCapabilities"] as Json | undefined;
+            const meta = capabilities?.["_meta"] as Json | undefined;
             if (session) {
                 return {...message, params: {...params, agentCapabilities: {
                     ...capabilities, sessionCapabilities: {...session, systemPrompt: {}},
+                    ...(meta ? {_meta: {...meta, rateLimits: {}}} : {}),
                 }}};
             }
         }

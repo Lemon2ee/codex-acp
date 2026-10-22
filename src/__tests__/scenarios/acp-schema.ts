@@ -30,7 +30,8 @@ const MESSAGE_TYPES: Record<string, string> = {
 /**
  * The schemas of the extension notifications of the adapter. ACP defines no schema for them.
  * ACP requires only that the method starts with `_`, see `ExtNotification`.
- * The schema of `_auth/status_update` follows `AuthStatusUpdateNotification` in `src/AuthStatusMeta.ts`.
+ * The schema of `_auth/status_update` follows `AuthStatusUpdateNotification` in `src/AuthStatusMeta.ts`,
+ * and the one of `_auth/rate_limits_update` follows `RateLimitsUpdateNotification` in `src/RateLimitsMeta.ts`.
  */
 const EXTENSION_NOTIFICATION_SCHEMAS: Record<string, object> = {
     "_auth/status_update": {
@@ -52,6 +53,36 @@ const EXTENSION_NOTIFICATION_SCHEMAS: Record<string, object> = {
                         properties: {email: {type: "string"}, organization: {type: "string"}, plan: {type: "string"}},
                     },
                     vendor: {type: "object"},
+                },
+            },
+        },
+    },
+    "_auth/rate_limits_update": {
+        type: "object",
+        required: ["rateLimits"],
+        additionalProperties: false,
+        properties: {
+            rateLimits: {
+                type: "object",
+                required: ["windows"],
+                additionalProperties: false,
+                properties: {
+                    windows: {
+                        type: "array",
+                        items: {
+                            type: "object",
+                            required: ["id", "label", "usedPercent"],
+                            additionalProperties: false,
+                            properties: {
+                                id: {type: "string"},
+                                label: {type: "string"},
+                                usedPercent: {type: "number"},
+                                resetsAt: {type: "string"},
+                                windowMinutes: {type: "number"},
+                                model: {type: "string"},
+                            },
+                        },
+                    },
                 },
             },
         },

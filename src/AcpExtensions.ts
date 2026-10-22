@@ -28,6 +28,17 @@ export {
 } from "./AuthStatusMeta";
 
 export {
+    RATE_LIMITS_META_KEY,
+    RATE_LIMITS_UPDATE_METHOD,
+    RateLimitsReporter,
+    rateLimitsCapability,
+    type RateLimitWindow,
+    type RateLimits,
+    type RateLimitsCapability,
+    type RateLimitsUpdateNotification,
+} from "./RateLimitsMeta";
+
+export {
     GOAL_CONTROL_ACTIONS,
     GOAL_CONTROL_METHOD,
     GOAL_EXTENSION_VERSION,

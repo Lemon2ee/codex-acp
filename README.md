@@ -20,6 +20,7 @@ Use [OpenAI Codex](https://github.com/openai/codex) from [Agent Client Protocol]
 - Session-scoped long-running goals in AIR through the [goal extension](docs/air-extensions.md#goal).
 - Typed warnings and errors through the opt-in [AIR session failure extension](docs/air-extensions.md#session-failure).
 - All AIR extensions, capabilities, and `_meta` keys: [AIR extensions](docs/air-extensions.md).
+- The plan's usage limits (the windows `/status` shows) as data through the [rate limits extension](docs/rate-limits.md).
 - A per-turn [agent file-change report](docs/air-extensions.md#agent-file-change-report) after capability negotiation.
 - Client-provided MCP servers over command-based stdio config and HTTP transport.
 - Slash commands: `/status`, `/mcp` (with `/mcp reconnect`), `/skills`, `/goal`, `/review`, `/review-branch`, `/review-commit`, `/compact`, and `/logout`, as well as configured skills.

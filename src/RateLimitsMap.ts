@@ -45,3 +45,22 @@ export function mergeRateLimitSnapshot(
         planType: update.planType ?? previous.planType,
     };
 }
+
+/** The name of a rate-limit window by its length: "5h limit", "Weekly limit". */
+export function rateLimitWindowLabel(windowDurationMins: number | null): string {
+    if (windowDurationMins === null) {
+        return "Limit";
+    }
+    if (windowDurationMins < 60) {
+        return `${windowDurationMins}m limit`;
+    }
+    if (windowDurationMins < 1440) {
+        const hours = Math.round(windowDurationMins / 60);
+        return `${hours}h limit`;
+    }
+    if (windowDurationMins < 10080) {
+        const days = Math.round(windowDurationMins / 1440);
+        return `${days}d limit`;
+    }
+    return "Weekly limit";
+}

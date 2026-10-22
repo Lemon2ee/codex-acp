@@ -113,6 +113,10 @@ import {
     authStatusCapability,
     type AuthStatus,
     type AuthenticationStatusResponse,
+    RATE_LIMITS_META_KEY,
+    RATE_LIMITS_UPDATE_METHOD,
+    RateLimitsReporter,
+    rateLimitsCapability,
     GOAL_CONTROL_ACTIONS,
     GOAL_CONTROL_METHOD,
     GOAL_EXTENSION_VERSION,
@@ -487,6 +491,8 @@ export class CodexAcpServer {
     private booleanConfigOptionsSupported: boolean;
     /** Last `authStatus` pushed to the client; used to suppress duplicates. */
     private currentAuthStatus: AuthStatus | null;
+    /** The connection's `_auth/rate_limits_update` state, see `RateLimitsMeta.ts`. */
+    private readonly rateLimits: RateLimitsReporter;
     /**
      * The last known account of the agent. Every successful account read and every `account/updated` sets it,
      * and a logout clears it. A session open takes it when the account read is unavailable.
@@ -611,6 +617,11 @@ export class CodexAcpServer {
         this.capabilities = ClientCapabilities.DEFAULT;
         this.booleanConfigOptionsSupported = false;
         this.currentAuthStatus = null;
+        this.rateLimits = new RateLimitsReporter({
+            client: () => this.codexAcpClient,
+            readRateLimits: () => this.runWithProcessCheck(() => this.codexAcpClient.getRateLimits()),
+            notify: (params) => this.connection.notify(RATE_LIMITS_UPDATE_METHOD, params),
+        });
         this.availableCommands = this.createAvailableCommands(codexAcpClient);
         this.recovery = this.createRecovery();
     }
@@ -640,6 +651,7 @@ export class CodexAcpServer {
         this.sessionIndex.configure(_params.clientCapabilities);
         await this.runWithProcessCheck(() => this.codexAcpClient.initialize(_params));
         this.sessionIndex.observe(this.codexAcpClient);
+        this.rateLimits.observe(this.codexAcpClient);
         this.publishFirstAuthStatusAfterResponse();
         const sessionCapabilities: SubagentAwareSessionCapabilities = {
             resume: { },
@@ -678,6 +690,8 @@ export class CodexAcpServer {
                     // Presence means "this agent pushes `_auth/status_update`". It
                     // never carries a payload, and the client never asks for one.
                     [AUTH_STATUS_META_KEY]: authStatusCapability(),
+                    // The same for `_auth/rate_limits_update`.
+                    [RATE_LIMITS_META_KEY]: rateLimitsCapability(),
                 },
             },
             authMethods: getCodexAuthMethods(_params.clientCapabilities),
@@ -703,6 +717,7 @@ export class CodexAcpServer {
         this.sessionIndex.configure(clientCapabilities);
         await this.runWithProcessCheck(() => this.codexAcpClient.initialize({clientInfo: params.info}));
         this.sessionIndex.observe(this.codexAcpClient);
+        this.rateLimits.observe(this.codexAcpClient);
         this.publishFirstAuthStatusAfterResponse();
         return {
             protocolVersion: 2,
@@ -716,6 +731,8 @@ export class CodexAcpServer {
                     _meta: {
                         // Presence means "this agent pushes `_auth/status_update`".
                         [AUTH_STATUS_META_KEY]: authStatusCapability(),
+                        // The same for `_auth/rate_limits_update`.
+                        [RATE_LIMITS_META_KEY]: rateLimitsCapability(),
                     },
                 },
                 providers: {},
@@ -2090,6 +2107,7 @@ export class CodexAcpServer {
             await replacement.initialize(this.initializeRequest);
             this.codexAcpClient = replacement;
             this.sessionIndex.observe(replacement);
+            this.rateLimits.observe(replacement);
             this.availableCommands = this.createAvailableCommands(replacement);
 
             const resumeErrors: unknown[] = [];
@@ -2299,6 +2317,7 @@ export class CodexAcpServer {
         this.codexAcpClient = client;
         // The session index watches the thread notifications of the app-server that runs now.
         this.sessionIndex.observe(client);
+        this.rateLimits.observe(client);
         this.availableCommands = this.createAvailableCommands(client);
         for (const session of this.sessions.values()) {
             session.asyncTasks.setAppServer(client.appServerClient);
@@ -2489,6 +2508,8 @@ export class CodexAcpServer {
         } catch (error) {
             logger.log("Failed to send auth status update", {error: String(error)});
         }
+        // A new login has other limits. Not awaited: the read must not hold the caller back.
+        this.rateLimits.authStatusChanged(next);
     }
 
     async setSessionMode(

@@ -5,7 +5,7 @@ import {AIR_COMMAND_ACTION_KEY, AIR_SKILL_PATH_KEY, airOnlyMeta} from "./AirExte
 import type {CodexAcpClient} from "./CodexAcpClient";
 import type {RateLimitSnapshot, ReviewTarget, SkillsListEntry, SkillsListParams, TurnCompletedNotification} from "./app-server/v2";
 import type {SessionState} from "./CodexAcpServer";
-import {createRateLimitsMap, type RateLimitsMap} from "./RateLimitsMap";
+import {createRateLimitsMap, rateLimitWindowLabel, type RateLimitsMap} from "./RateLimitsMap";
 import type {TokenCount} from "./TokenCount";
 import {logger} from "./Logger";
 import {MCP_COMMAND_INPUT_HINT, McpCommand} from "./mcp/McpCommand";
@@ -673,14 +673,14 @@ export class CodexCommands {
         if (rateLimits.primary) {
             const percentLeft = Math.round(100 - rateLimits.primary.usedPercent);
             const resetText = this.formatResetTime(rateLimits.primary.resetsAt);
-            const label = this.formatWindowLabel(rateLimits.primary.windowDurationMins);
+            const label = rateLimitWindowLabel(rateLimits.primary.windowDurationMins);
             lines.push(`**${prefix}${label}:** ${percentLeft}% left${resetText}`);
         }
 
         if (rateLimits.secondary) {
             const percentLeft = Math.round(100 - rateLimits.secondary.usedPercent);
             const resetText = this.formatResetTime(rateLimits.secondary.resetsAt);
-            const label = this.formatWindowLabel(rateLimits.secondary.windowDurationMins);
+            const label = rateLimitWindowLabel(rateLimits.secondary.windowDurationMins);
             lines.push(`**${prefix}${label}:** ${percentLeft}% left${resetText}`);
         }
 
@@ -719,24 +719,6 @@ export class CodexCommands {
             return null;
         }
         return Math.round(value).toLocaleString("en-US");
-    }
-
-    private formatWindowLabel(windowDurationMins: number | null): string {
-        if (windowDurationMins === null) {
-            return "Limit";
-        }
-        if (windowDurationMins < 60) {
-            return `${windowDurationMins}m limit`;
-        }
-        if (windowDurationMins < 1440) {
-            const hours = Math.round(windowDurationMins / 60);
-            return `${hours}h limit`;
-        }
-        if (windowDurationMins < 10080) {
-            const days = Math.round(windowDurationMins / 1440);
-            return `${days}d limit`;
-        }
-        return "Weekly limit";
     }
 
     private formatResetTime(resetsAt: number | null): string {
